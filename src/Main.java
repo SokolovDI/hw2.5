@@ -6,7 +6,8 @@
  * float[] arr = new float[size];
  * 2) Заполняют этот массив единицами;
  * 3) Засекают время выполнения: long a = System.currentTimeMillis();
- * 4) Проходят по всему массиву и для каждой ячейки считают новое значение по формуле:
+ * 4) Проходят по всему массиву и для каждой ячейки считают
+ * новое значение по формуле:
  * arr[i] = (float)(arr[i] * Math.sin(0.2f + i / 5) * Math.cos(0.2f + i / 5) * Math.cos(0.4f + i / 2));
  * 5) Проверяется время окончания метода System.currentTimeMillis();
  * 6) В консоль выводится время работы: System.out.println(System.currentTimeMillis() - a);
@@ -29,8 +30,70 @@
  * for (int i = 0; i < size; i++) {
  * arr[i] = (float)(arr[i] * Math.sin(0.2f + i / 5) * Math.cos(0.2f + i / 5) * Math.cos(0.4f + i / 2));
  * }
- * Для второго метода замеряете время разбивки массива на 2, просчета каждого из двух массивов и склейки.
+ * Для второго метода замеряете время разбивки массива на 2,
+ * просчета каждого из двух массивов и склейки.
  */
 
 public class Main {
+    private static final int size = 10000000;
+    private static final int h = size / 2;
+    private static final float[] arr = new float[size];
+
+    public static void main(String[] args) {
+        for (int i = 0; i < size; i++) {
+            arr[i] = 1;
+        }
+        long firstTime = firstThread();
+        long secondTime = secondThread();
+        increase(firstTime, secondTime);
+    }
+
+    private static long firstThread() {
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < size; i++) {
+            Main.arr[i] = (float) (Main.arr[i] * Math.sin(0.2f + i / 5) * Math.cos(0.2f + i / 5) * Math.cos(0.4f + i / 2));
+        }
+        long firstTime = System.currentTimeMillis() - start;
+        System.out.println("first: " + firstTime);
+        return firstTime;
+    }
+
+    private static long secondThread(){
+        float[] a = new float[h];
+        float[] b = new float[h];
+
+        long start = System.currentTimeMillis();
+
+        System.arraycopy(Main.arr,0,a,0,h);
+        System.arraycopy(Main.arr,h,b,0,h);
+
+        MyThread t1 = new MyThread(a);
+        MyThread t2 = new MyThread(b);
+
+        t1.start();
+        t2.start();
+
+        try {
+            t1.join();
+            t2.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        a = t1.getArr();
+        b = t2.getArr();
+
+        System.arraycopy(a, 0, Main.arr, 0, h);
+        System.arraycopy(b, 0, Main.arr, a.length, b.length);
+
+        long secondTime = System.currentTimeMillis() - start;
+        System.out.println("second: " + secondTime);
+        return secondTime;
+    }
+
+    private static void increase(long firstTime, long secondTime) {
+        double diff = ((double) firstTime / (double) secondTime) - 1;
+        int increase = (int) (diff * 100);
+        System.out.println("increase: " + increase);
+    }
 }
